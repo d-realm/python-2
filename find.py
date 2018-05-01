@@ -68,12 +68,16 @@ def drive(distance):
     leftMotor.position_sp += angle
     rightMotor.run_to_abs_pos(speed_sp = DRIVE_SPEED)
     leftMotor.run_to_abs_pos(speed_sp = DRIVE_SPEED)
+    driftLeft = False
+    driftRight = False
     while any(m.state for m in (leftMotor, rightMotor)):
         if (driftLeft == False and gyroSensor.value() < angleTarget - 1):
+            leftMotor.position_sp += 36
             leftMotor.run_to_abs_pos(speed_sp = 1.1*DRIVE_SPEED)
             driftLeft = True
             print("Drive: Fixing drift to the left...")
         elif (driftRight == False and angleTarget + 1 < gyroSensor.value()):
+            rightMotor.position_sp += 36
             rightMotor.run_to_abs_pos(speed_sp = 1.1*DRIVE_SPEED)
             driftRight = True
             print("Drive: Fixing drift to the right...")
@@ -81,7 +85,7 @@ def drive(distance):
             leftMotor.run_to_abs_pos(speed_sp = DRIVE_SPEED)
             driftLeft = False
             print("Drive: Fixed drift to the left!")
-        elif (driftRight == False and angleTarget + 1 > gyroSensor.value()):
+        elif (driftRight == True and angleTarget + 1 > gyroSensor.value()):
             rightMotor.run_to_abs_pos(speed_sp = DRIVE_SPEED)
             driftRight = False
             print("Drive: Fixed drift to the right!")
@@ -102,6 +106,7 @@ def turn(angle):
 
     if (angle == 0):
         return
+    global angleTarget
     angleTarget += angle
     direction = angle / abs(angle)
 
@@ -123,8 +128,11 @@ def turn(angle):
         print("Turn: Slow: %d" % current)
 
     brake()
+    rightMotor.wait_until_not_moving()
     leftMotor.wait_until_not_moving()
+    rightMotor.position_sp = 0
     rightMotor.position = 0 # Reset position for drive function
+    leftMotor.position_sp = 0
     leftMotor.position = 0
 
     if (angle == 90):
@@ -149,19 +157,20 @@ SCAN_SPEED = 360
 directions = []
 def scan():
     global directions
-    ultraMotor.position_sp = 0
-    ultraMotor.run_to_abs_pos(speed_sp = SCAN_SPEED)
-    ultraMotor.wait_while('running')
-    sleep(0.1)
+    if (ultraMotor.position != 0):
+        ultraMotor.position_sp = 0
+        ultraMotor.run_to_abs_pos(speed_sp = SCAN_SPEED)
+        ultraMotor.wait_while('running')
+        sleep(0.1)
     front = ultraSensor.value() // 420
     print("Scan: Front: %d" % ultraSensor.value())
-    ultraMotor.position_sp = -90
+    ultraMotor.position_sp = -95
     ultraMotor.run_to_abs_pos(speed_sp = SCAN_SPEED)
     ultraMotor.wait_while('running')
     sleep(0.1)
     right = ultraSensor.value() // 420
     print("Scan: Right: %d" % ultraSensor.value())
-    ultraMotor.position_sp = 90
+    ultraMotor.position_sp = 95
     ultraMotor.run_to_abs_pos(speed_sp = SCAN_SPEED)
     ultraMotor.wait_while('running')
     sleep(0.1)
@@ -169,6 +178,8 @@ def scan():
     print("Scan: Left: %d" % ultraSensor.value())
     ultraMotor.position_sp = 0
     ultraMotor.run_to_abs_pos(speed_sp = SCAN_SPEED)
+    ultraMotor.wait_while('running')
+    ultraMotor.stop()
     print("Scan: Front: %d" % front)
     print("Scan: Right: %d" % right)
     print("Scan: Left : %d" % left)
@@ -255,7 +266,7 @@ def updateWalls(front, left, right):
 
 turnDir = 1
 found = False
-def found():
+def find():
     global turnDir
     global found
     while (found == False):
@@ -264,7 +275,7 @@ def found():
         if (directions[0] > 0):
             print("Forward ", end='')
         if (directions[1] > 0):
-            print("Left ", end'')
+            print("Left ", end='')
         if (directions[2] > 0):
             print("Right ", end='')
         print("")
@@ -279,6 +290,7 @@ def found():
             turn(90)
         else:
             turn(180)
+        print("Driving in this direction")
         driveForward()
 
 # </FINDING_MODULE>
@@ -298,7 +310,7 @@ def debug():
             print("9 | Print robot data")
             value = int(input())
             if (value == 0):
-                print("Driving 42 centimetres..." % value, end="\r")
+                print("Driving 42 centimetres...", end="\r")
                 driveForward()
             elif (value == 1):
                 print("Turn: Input angle in degrees")
@@ -328,7 +340,8 @@ def debug():
             print("Error: Invalid input...", end="\r")
             sleep(2)
 
-debug() # Enter debug mode
+find()
+# debug() # Enter debug mode
 
 # Stop the motors before exiting.
 rightMotor.stop()
