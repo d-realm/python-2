@@ -342,15 +342,15 @@ def find():
 
 # </FINDING_MODULE>
 
-WHEEL_90 = 100
+WHEEL_90 = 220
 def gyroCalibrate():
     global gyroOffClock
-    rightMotor.position_sp = WHEEL_90
-    leftMotor.position_sp = -WHEEL_90
+    rightMotor.position_sp = -WHEEL_90
+    leftMotor.position_sp = WHEEL_90
     rightMotor.run_to_abs_pos(speed_sp = TURN_SPEED, stop_action = "hold")
     leftMotor.run_to_abs_pos(speed_sp = TURN_SPEED, stop_action = "hold")
-    while any(m.state for m in (leftMotor, rightMotor)):
-        sleep(0.01)
+    rightMotor.wait_while('running')
+    leftMotor.wait_while('running')
     sleep(0.5)
     gyroOffClock = gyroSensor.value()
     print("Gyro value: %d" % gyroOffClock)
