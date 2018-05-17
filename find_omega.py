@@ -283,9 +283,9 @@ def foundVictim():
     print("Found: Victim found")
     Sound.tone([(1000, 500, 500)] * 3)
 
-turnDir = 1
+noClaw = False
 def find():
-    global turnDir
+    turnDir = 1
     global found
     global pathStack
     while (found == False):
@@ -314,19 +314,23 @@ def find():
             pathStack.append(node)
 
         print("Find: Available directions (robot):")
+        possCount = 0
         if (node.directions[dirRef(1, node.reference, robot.dir)] > 0):
             turnDir = 90
+            possCount += 1
             print("Right ", end='')
         if (node.directions[dirRef(3, node.reference, robot.dir)] > 0):
             turnDir = 270
+            possCount += 1
             print("Left ", end='')
         if (node.directions[dirRef(0, node.reference, robot.dir)] > 0):
             turnDir = 0
+            possCount += 1
             print("Forward ", end='')
 
         print("")
+        '''
         print("Find: Available directions (wallData):")
-        possCount = 0;
         if (wallData[mazePos(robot.x, robot.y) + dirOffset[robot.dir]] == False):
             print("Forward ", end='')
             possCount += 1
@@ -337,6 +341,7 @@ def find():
             print("Right ", end='')
             possCount += 1
         print("")
+        '''
         deadEnd = False
         if (possCount <= 1 and deadEnd == True):
             print("Find: Still dead end")
@@ -364,13 +369,23 @@ def find():
         if (found == False):
             turn(turnDir)
             driveForward()
-            claw("close")
-            if (checkRed() == True):
-                foundVictim()
-                claw("close more")
-                return
-            else:
-                claw("open", False)
+            if (noClaw == False):
+                claw("close")
+                if (checkRed() == True):
+                    foundVictim()
+                    claw("close more")
+                    return
+                else:
+                    claw("open", False)
+
+def resetFind():
+    global found
+    global noClaw
+    found = False
+    noClaw = True
+    pathStack.clear()
+    sleep(1)
+
 
 def nodeExists(x, y, dir):
     global pathStack
@@ -505,6 +520,8 @@ def debug():
 
 # gyroCalibrate()
 claw("open")
+find()
+resetFind()
 find()
 debug() # Enter debug mode
 
